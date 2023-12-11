@@ -1,4 +1,4 @@
-import std/[strutils, sequtils, tables]
+import std/[strutils, sequtils, tables, math]
 import npeg
 
 type
@@ -44,48 +44,21 @@ proc parseInput(x: string): Map =
 
 let map = parseInput(readFile("input.txt"))
 
-type
-  StartPos = object
-    label: string
-    inputPos: int
+var dists: seq[int]
+for ii in 0..5:
+  var
+    currentLocation = map.starts[ii]
+    steps = 0
+  block travelMap:
+    while true:
+      for i, direction in map.directions:
+        currentLocation = case direction:
+          of Left: currentLocation.left
+          of Right: currentLocation.right
+        inc steps
+        if currentLocation.name[^1] == 'Z':
+          dists.add steps
+          break travelMap
 
-var
-  cache: Table[StartPos, tuple[location: Location, length: int]]
-  currentLocations: seq[tuple[startPos: StartPos, startIdx: int, location: Location, inputIdx: int]]
-  steps = 0
-
-for start in map.starts:
-  currentLocations.add (startPos: StartPos(label: start.name, inputPos: 0), startIdx: 0, location: start, inputIdx: 0)
-
-
-
-#proc `$`(l: Location): string =
-#  l.name
-
-block travelMap:
-  while true:
-    for direction in map.directions:
-      for currentLocation in currentLocations.mitems:
-        if currentLocation.inputIdx == steps:
-          cache.withValue(
-            StartPos(label: currentLocation.location.name,
-             inputPos: currentLocation.inputIdx mod map.directions.len),
-            value):
-            currentLocation.location = value.location
-            currentLocation.inputIdx += value.length
-          currentLocation.location = case direction:
-            of Left: currentLocation.location.left
-            of Right: currentLocation.location.right
-          inc currentLocation.inputIdx
-      inc steps
-      var ends = 0
-      for currentLocation in currentLocations:
-        if currentLocation.location.name[^1] == 'Z':
-          cache[
-            StartPos(label: currentLocation.location.name,
-             inputPos: currentLocation.inputIdx mod map.directions.len)] =
-            (location: currentLocation.location, length: currentLocation.inputIdx - currentLocation.startIdx)
-          inc ends
-      if ends == currentLocations.len: break travelMap
-
-echo steps
+echo dists
+echo dists.lcm
